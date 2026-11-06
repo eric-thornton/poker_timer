@@ -1,6 +1,6 @@
 {
-  "name": "electron-react-boilerplate",
-  "productName": "ElectronReact",
+  "name": "deadmoney-shootout",
+  "productName": "DeadmoneyShootout",
   "description": "Electron application boilerplate based on React, React Router, Webpack, React Fast Refresh for rapid application development",
   "scripts": {
     "build": "concurrently \"yarn build:main\" \"yarn build:renderer\"",
@@ -30,7 +30,7 @@
     ]
   },
   "build": {
-    "productName": "ElectronReact",
+    "productName": "DeadmoneyShootout",
     "appId": "org.erb.ElectronReact",
     "files": [
       "dist/",
@@ -48,6 +48,7 @@
           "arch": "universal"
         }
       ],
+      "icon": "assets/DeadmoneyShootout.png",
       "type": "distribution",
       "hardenedRuntime": true,
       "entitlements": "assets/entitlements.mac.plist",
@@ -55,6 +56,7 @@
       "gatekeeperAssess": false
     },
     "dmg": {
+      "artifactName": "${productName}-${version}.${ext}",
       "contents": [
         {
           "x": 130,

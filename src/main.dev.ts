@@ -16,6 +16,8 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 
+app.setName('DeadmoneyShootout');
+
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -71,7 +73,7 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
-    icon: getAssetPath('icon.png'),
+    icon: getAssetPath('DeadmoneyShootout.png'),
     webPreferences: {
       nodeIntegration: true,
     },
@@ -120,11 +122,7 @@ const createWindow = async () => {
  */
 
 app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
 });
 
 app.whenReady().then(createWindow).catch(console.log);

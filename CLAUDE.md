@@ -1,6 +1,6 @@
 # Poker Timer
 
-Deadmoney's Monthly Shootout: an Electron + React + TypeScript desktop app, built on
+Deadmoney's Shootout: an Electron + React + TypeScript desktop app, built on
 electron-react-boilerplate (Electron 11.0.1, webpack 5.5.1, electron-builder 22.10.5).
 No login or auth; the app is a single window.
 
@@ -76,8 +76,10 @@ This machine has only Node 26 and the project is Node 14 era. Known problems and
 
 - `package.json` `build.mac.target` is `dmg` with `arch: universal`, so one app runs on both
   x64 and arm64. There are no native modules. Verify with
-  `lipo -archs release/mac-universal/ElectronReact.app/Contents/MacOS/ElectronReact`
+  `lipo -archs release/mac-universal/DeadmoneyShootout.app/Contents/MacOS/DeadmoneyShootout`
   (expect `x86_64 arm64`). Build output goes to `release/` (gitignored).
+- The app icon source is `assets/DeadmoneyShootout.jpg`; macOS packaging and the Electron
+  window use its square PNG derivative, `assets/DeadmoneyShootout.png`.
 - Build with: `CSC_IDENTITY_AUTO_DISCOVERY=false yarn package`, with the PATH shim above.
   This needs **Node 14 x64 under Rosetta**: electron-osx-sign pulls in `istextorbinary` /
   `editions`, which only support Node 10-15, and Node 14 has no arm64 build. Download
@@ -99,7 +101,7 @@ This machine has only Node 26 and the project is Node 14 era. Known problems and
   setup needed; electron-builder downloads its own binaries). After the production bundle
   exists (`yarn build`, which `yarn package` runs first), build just the installer with:
   `CSC_IDENTITY_AUTO_DISCOVERY=false node_modules/.bin/electron-builder build --win --publish never`
-  using the same Node 14 PATH shim. Output: `release/ElectronReact Setup 2.3.0.exe`
+  using the same Node 14 PATH shim. Output: `release/DeadmoneyShootout Setup 2.3.0.exe`
   (one-click, per-user installer) and `release/win-unpacked/`.
 - `yarn package` on a Mac only builds the Mac target; pass `--win` as above for Windows.
 - Verified to build, not run: there is no Windows machine here. The installer is unsigned, so

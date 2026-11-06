@@ -401,11 +401,7 @@ const Hello = () => {
         </section>
         <section className="Column BottomColumn">
           <div className="ColumnContent">
-            <h1 className="Title">
-              Deadmoney&apos;s
-              <br />
-              Monthly Shootout
-            </h1>
+            <h1 className="Title">Deadmoney Shootout</h1>
             <div className="ClockDisplay">{formatClock(secondsLeft)}</div>
             {/* hidden, not removed, while running so the blinds below do not jump */}
             <div

@@ -61,6 +61,8 @@ The repo’s startup flow requires a workaround because the normal `yarn start` 
 - `ELECTRON_RUN_AS_NODE=1` is set in some VS Code/extension environments and makes Electron act like a plain Node process. Always unset it for this app:
   - `env -u ELECTRON_RUN_AS_NODE ...`
 - Electron 11's macOS development bundle defaults to the OS-visible name `Electron`. `app.setName()` only changes Electron's internal name and does not change the name macOS shows. The `start:main` script runs `.erb/scripts/SetDevAppName.js` first to set the development bundle's `CFBundleDisplayName` and `CFBundleName` from `productName`; packaged builds get their name from electron-builder.
+- The packaged app version comes from `src/package.json`. The macOS build remains universal (`build.mac.target` uses `arch: universal`), while `build.dmg.artifactName` controls only the DMG filename; use `${productName}-${version}.${ext}` to omit the architecture suffix.
+- This environment lacks `/usr/bin/python`, which electron-builder 22's DMG target requires. If the universal app bundle builds but DMG creation fails with `spawn /usr/bin/python ENOENT`, create and verify a compressed image from `release/mac-universal/DeadmoneyShootout.app` with `hdiutil create` and `hdiutil verify`.
 - `webpack-dev-server` needs the DLL files in `.erb/dll` to exist before the renderer can serve UI assets correctly.
 - The warning `Invalid header: Does not start with Cr24` during Electron startup is harmless in this repo and does not necessarily indicate a fatal issue.
 - `Browserslist: caniuse-lite is outdated` warnings are harmless and do not stop the app.
