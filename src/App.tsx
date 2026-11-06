@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import playersData from '../resource/players.unl';
 import payoutsData from '../resource/payouts.unl';
+import getNextBuyinCount from './buyinCount';
 import './App.global.css';
 
 const parseBlinds = (text: string) =>
@@ -96,10 +97,17 @@ type BuyinsProps = {
   counts: number[];
   playing: boolean[];
   maxBuyins: number;
+  wrapBuyins: boolean;
   setCounts: (counts: number[]) => void;
 };
 
-const Buyins = ({ counts, playing, maxBuyins, setCounts }: BuyinsProps) => {
+const Buyins = ({
+  counts,
+  playing,
+  maxBuyins,
+  wrapBuyins,
+  setCounts,
+}: BuyinsProps) => {
   const setCount = (index: number, count: number) =>
     setCounts(counts.map((c, i) => (i === index ? count : c)));
 
@@ -127,7 +135,10 @@ const Buyins = ({ counts, playing, maxBuyins, setCounts }: BuyinsProps) => {
                     className="BuyinButton"
                     aria-label={`Add buyin for ${name}`}
                     onClick={() =>
-                      setCount(i, counts[i] < maxBuyins ? counts[i] + 1 : 1)
+                      setCount(
+                        i,
+                        getNextBuyinCount(counts[i], maxBuyins, wrapBuyins)
+                      )
                     }
                   >
                     +
@@ -210,6 +221,7 @@ const Hello = () => {
   const [playing, setPlaying] = useState<boolean[]>(players.map(() => true));
   const [view, setView] = useState<'buyins' | 'players'>('buyins');
   const [maxBuyins, setMaxBuyins] = useState(BUYIN_LIMITS[0]);
+  const [wrapBuyins, setWrapBuyins] = useState(false);
   const [clockRunning, setClockRunning] = useState(false);
   const [roundIndex, setRoundIndex] = useState(0);
   const [warningSound, setWarningSound] = useState(defaultSound('oneminute'));
@@ -375,6 +387,15 @@ const Hello = () => {
                   {limit}
                 </label>
               ))}
+              <label htmlFor="wrapBuyins">
+                <input
+                  id="wrapBuyins"
+                  type="checkbox"
+                  checked={wrapBuyins}
+                  onChange={(e) => setWrapBuyins(e.target.checked)}
+                />
+                Wrap
+              </label>
             </div>
           </div>
         </section>
@@ -487,6 +508,7 @@ const Hello = () => {
             </div>
             <div className="ClockButtons">
               <button
+                className="ClockToggle"
                 type="button"
                 onClick={() => setClockRunning(!clockRunning)}
               >
@@ -518,6 +540,7 @@ const Hello = () => {
                   counts={counts}
                   playing={playing}
                   maxBuyins={maxBuyins}
+                  wrapBuyins={wrapBuyins}
                   setCounts={setCounts}
                 />
               </>

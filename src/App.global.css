@@ -316,6 +316,10 @@ a:hover {
   color: black;
 }
 
+.ClockToggle {
+  width: 8em;
+}
+
 .Structure .CurrentRound td {
   font-weight: bold;
   color: black;

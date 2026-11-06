@@ -14,10 +14,11 @@ No login or auth; the app is a single window.
   (meaning not yet confirmed with the user). `App.tsx` loads every `.blinds` file with `require.context`, so a new file in `resource/` shows up in the Structure drop-down (under the Structure heading, sorted by hh:mm, default `2:51`).
 - `resource/players.unl`: one player name per line. It drives the Buyins table (Name, Count,
   Value, plus a Total row). Count starts at 1; each row has a single + button that adds a buyin
-  until the limit is reached, and one more click sends it back to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is
-  chosen by the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) at the
-  bottom of the Structure column; lowering it trims counts that are over it. Counts are held
-  in React state only, so they reset when the app restarts.
+  up to the selected limit. The Wrap checkbox defaults off; when enabled, the next click at the
+  limit returns the count to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is chosen by
+  the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) at the bottom of
+  the Structure column; lowering it trims counts that are over it. Counts are held in React
+  state only, so they reset when the app restarts.
 - `resource/payouts.unl`: `pot|1st %|2nd %|3rd %|4th %`, one row per pot size ($50 to $300 in
   \$10 steps); a `-` in the 4th column means only three places are paid. The Payouts table
   looks up the row for the current pot (buyin count x \$10; the closest smaller row if there is

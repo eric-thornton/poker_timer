@@ -109,3 +109,4 @@ env -u ELECTRON_RUN_AS_NODE yarn start:main
 - Do not use the default `yarn start` flow for this repo in the current environment unless the startup blockers are resolved.
 - The no-op npm shim is required to prevent the renderer spawn hook from killing the dev server during this repo’s older Electron/webpack startup sequence.
 - Any time a commit is made, record any new repo-specific learnings or setup discoveries in this file so future Copilot sessions inherit the updated knowledge.
+- Give the Start/Pause clock toggle a fixed width (`.ClockToggle`) because its changing label otherwise shifts the clock button row.
