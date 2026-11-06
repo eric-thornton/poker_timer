@@ -21,6 +21,19 @@ export default {
           },
         },
       },
+      {
+        test: /\.(unl|blinds)$/,
+        type: 'asset/source',
+      },
+      {
+        // sounds are inlined as data URIs so they work the same in dev, packaged Mac and Windows
+        test: /\.wav$/,
+        type: 'asset/inline',
+        // webpack's default `audio/wave` is not playable in Electron; `audio/wav` is
+        generator: {
+          dataUrl: { encoding: 'base64', mimetype: 'audio/wav' },
+        },
+      },
     ],
   },
 

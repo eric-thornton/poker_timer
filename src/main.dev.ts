@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, powerSaveBlocker, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -93,7 +93,11 @@ const createWindow = async () => {
     }
   });
 
+  // Keep the display awake while the clock is up (macOS and Windows)
+  const sleepBlockerId = powerSaveBlocker.start('prevent-display-sleep');
+
   mainWindow.on('closed', () => {
+    powerSaveBlocker.stop(sleepBlockerId);
     mainWindow = null;
   });
 
