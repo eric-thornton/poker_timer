@@ -10,8 +10,9 @@
  */
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
+import fs from 'fs';
 import path from 'path';
-import { app, BrowserWindow, powerSaveBlocker, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, powerSaveBlocker, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -27,6 +28,40 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+const getPlayersFilePath = () =>
+  app.isPackaged
+    ? path.join(app.getPath('userData'), 'players.txt')
+    : path.resolve(__dirname, '../resource/players.txt');
+
+const isPlayerNames = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.every(
+    (name: unknown) => typeof name === 'string' && name.trim() !== ''
+  );
+
+ipcMain.handle('players:load', async () => {
+  try {
+    return await fs.promises.readFile(getPlayersFilePath(), 'utf8');
+  } catch (error) {
+    if (app.isPackaged && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+});
+
+ipcMain.handle('players:save', async (_event, playerNames: unknown) => {
+  if (!isPlayerNames(playerNames)) {
+    throw new Error('Player names must be a list of non-empty strings.');
+  }
+
+  await fs.promises.writeFile(
+    getPlayersFilePath(),
+    playerNames.map((name) => name.trim()).join('\n'),
+    'utf8'
+  );
+});
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

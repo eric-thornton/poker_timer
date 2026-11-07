@@ -109,9 +109,54 @@ a:hover {
 }
 
 .Buyins {
-  font-size: min(calc((20vw - 40px) / 11), calc((100vh - 130px) / 24));
+  font-size: calc((20vw - 40px) / 11);
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+.BuyinsNameColumn {
+  width: 50%;
+}
+
+.BuyinsHeader,
+.BuyinsFooter {
+  width: calc(100% - 8px);
+}
+
+.BuyinsCountColumn,
+.BuyinsValueColumn {
+  width: 25%;
+}
+
+.BuyinsTable {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.BuyinsScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+}
+
+.BuyinsScroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.BuyinsScroll::-webkit-scrollbar-track {
+  background: #222;
+}
+
+.BuyinsScroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.BuyinsScroll::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
 }
 
 .Buyins th,
@@ -119,6 +164,11 @@ a:hover {
   padding: 0.3em 0.25em;
   text-align: center;
   white-space: nowrap;
+}
+
+.BuyinsHeader th:nth-child(2) {
+  position: relative;
+  left: -5px;
 }
 
 .Buyins th,
@@ -135,6 +185,11 @@ a:hover {
 .Buyins tfoot td {
   border-top-width: 1px;
   font-weight: bold;
+}
+
+.BuyinsFooter {
+  flex-shrink: 0;
+  margin-bottom: 50px;
 }
 
 .Buyins .BuyinButton {
@@ -174,15 +229,96 @@ a:hover {
   flex: 1;
 }
 
+.PlayerColumnContent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .PlayerSelection {
-  font-size: min(calc((20vw - 40px) / 11), calc((100vh - 200px) / 24));
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  font-size: calc((20vw - 40px) / 11);
   margin: 0;
   padding: 0;
   text-align: left;
 }
 
+.PlayerSelection::-webkit-scrollbar {
+  width: 8px;
+}
+
+.PlayerSelection::-webkit-scrollbar-track {
+  background: #222;
+}
+
+.PlayerSelection::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.PlayerSelection::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.PlayerSelectionView {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .PlayerSelection li {
   padding: 0.3em 0 0.3em 15%;
+}
+
+.PlayerEditor {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.4em;
+  margin-bottom: 20px;
+  padding: 20px 0;
+  text-align: left;
+  font-size: max(10px, calc((20vw - 40px) / 14));
+}
+
+.PlayerEditor > label {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.PlayerEditor input {
+  min-width: 0;
+  padding: 0.3em;
+  color: white;
+  background: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 0.3em;
+  font: inherit;
+}
+
+.PlayerEditorButtons {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+.PlayerEditorButtons button {
+  padding: 0.3em 0.8em;
+  font-size: inherit;
+}
+
+.PlayerEditorError {
+  grid-column: 1 / -1;
+  color: #ff8a80;
+  text-align: center;
 }
 
 .PlayerSelection label,

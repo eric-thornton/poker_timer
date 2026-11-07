@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
-import playersData from '../resource/players.unl';
+import { ipcRenderer } from 'electron';
+import playersData from '../resource/players.txt';
 import payoutsData from '../resource/payouts.unl';
 import getNextBuyinCount from './buyinCount';
 import './App.global.css';
@@ -48,10 +49,18 @@ const structures = blindFiles
 
 const DEFAULT_STRUCTURE = '2:51';
 
-const players = playersData
+const initialPlayers = playersData
   .split('\n')
   .map((line) => line.trim())
-  .filter((line) => line !== '');
+  .filter((line) => line !== '')
+  .sort((a, b) => a.localeCompare(b));
+
+const parsePlayers = (text: string) =>
+  text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .sort((a, b) => a.localeCompare(b));
 
 // Every resource/*.wav file is a selectable sound (shown without the extension)
 const soundContext = require.context('../resource', false, /\.wav$/);
@@ -94,6 +103,7 @@ const countBuyins = (counts: number[], playing: boolean[]) =>
   counts.reduce((sum, c, i) => (playing[i] ? sum + c : sum), 0);
 
 type BuyinsProps = {
+  players: string[];
   counts: number[];
   playing: boolean[];
   maxBuyins: number;
@@ -102,6 +112,7 @@ type BuyinsProps = {
 };
 
 const Buyins = ({
+  players,
   counts,
   playing,
   maxBuyins,
@@ -114,75 +125,155 @@ const Buyins = ({
   const totalCount = countBuyins(counts, playing);
 
   return (
-    <table className="Buyins">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Count</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        {players.map(
-          (name, i) =>
-            playing[i] && (
-              <tr key={name}>
-                <td>{name}</td>
-                <td>
-                  {counts[i]}
-                  <button
-                    type="button"
-                    className="BuyinButton"
-                    aria-label={`Add buyin for ${name}`}
-                    onClick={() =>
-                      setCount(
-                        i,
-                        getNextBuyinCount(counts[i], maxBuyins, wrapBuyins)
-                      )
-                    }
-                  >
-                    +
-                  </button>
-                </td>
-                <td>${counts[i] * BUYIN_PRICE}</td>
-              </tr>
-            )
-        )}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td>Total</td>
-          <td>{totalCount}</td>
-          <td>${totalCount * BUYIN_PRICE}</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div className="BuyinsTable">
+      <table className="Buyins BuyinsHeader">
+        <colgroup>
+          <col className="BuyinsNameColumn" />
+          <col className="BuyinsCountColumn" />
+          <col className="BuyinsValueColumn" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Count</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+      </table>
+      <div className="BuyinsScroll">
+        <table className="Buyins">
+          <colgroup>
+            <col className="BuyinsNameColumn" />
+            <col className="BuyinsCountColumn" />
+            <col className="BuyinsValueColumn" />
+          </colgroup>
+          <tbody>
+            {players.map(
+              (name, i) =>
+                playing[i] && (
+                  <tr key={name}>
+                    <td>{name}</td>
+                    <td>
+                      {counts[i]}
+                      <button
+                        type="button"
+                        className="BuyinButton"
+                        aria-label={`Add buyin for ${name}`}
+                        onClick={() =>
+                          setCount(
+                            i,
+                            getNextBuyinCount(counts[i], maxBuyins, wrapBuyins)
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </td>
+                    <td>${counts[i] * BUYIN_PRICE}</td>
+                  </tr>
+                )
+            )}
+          </tbody>
+        </table>
+      </div>
+      <table className="Buyins BuyinsFooter">
+        <colgroup>
+          <col className="BuyinsNameColumn" />
+          <col className="BuyinsCountColumn" />
+          <col className="BuyinsValueColumn" />
+        </colgroup>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td>{totalCount}</td>
+            <td>${totalCount * BUYIN_PRICE}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 };
 
 type PlayerSelectionProps = {
+  players: string[];
   playing: boolean[];
   setPlaying: (playing: boolean[]) => void;
+  playerName: string;
+  setPlayerName: (name: string) => void;
+  playersReady: boolean;
+  savingPlayers: boolean;
+  playersError: string;
+  onAddPlayer: () => void;
+  onDeletePlayer: () => void;
 };
 
-const PlayerSelection = ({ playing, setPlaying }: PlayerSelectionProps) => (
-  <ul className="PlayerSelection">
-    {players.map((name, i) => (
-      <li key={name}>
-        <label htmlFor={`player-${i}`}>
-          <input
-            id={`player-${i}`}
-            type="checkbox"
-            checked={playing[i]}
-            onChange={() =>
-              setPlaying(playing.map((p, j) => (j === i ? !p : p)))
-            }
-          />
-          {name}
-        </label>
-      </li>
-    ))}
-  </ul>
+const PlayerSelection = ({
+  players,
+  playing,
+  setPlaying,
+  playerName,
+  setPlayerName,
+  playersReady,
+  savingPlayers,
+  playersError,
+  onAddPlayer,
+  onDeletePlayer,
+}: PlayerSelectionProps) => (
+  <div className="PlayerSelectionView">
+    <ul className="PlayerSelection">
+      {players.map((name, i) => (
+        <li key={name}>
+          <label htmlFor={`player-${i}`}>
+            <input
+              id={`player-${i}`}
+              type="checkbox"
+              checked={playing[i]}
+              disabled={!playersReady || savingPlayers}
+              onChange={() =>
+                setPlaying(playing.map((p, j) => (j === i ? !p : p)))
+              }
+            />
+            {name}
+          </label>
+        </li>
+      ))}
+    </ul>
+    <form
+      className="PlayerEditor"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onAddPlayer();
+      }}
+    >
+      <label htmlFor="player-name">
+        Player name
+        <input
+          id="player-name"
+          type="text"
+          value={playerName}
+          disabled={!playersReady || savingPlayers}
+          onChange={(event) => setPlayerName(event.target.value)}
+        />
+      </label>
+      <div className="PlayerEditorButtons">
+        <button type="submit" disabled={!playersReady || savingPlayers}>
+          Add
+        </button>
+        <button
+          type="button"
+          disabled={!playersReady || savingPlayers}
+          onClick={onDeletePlayer}
+        >
+          Delete
+        </button>
+      </div>
+      {playersError && (
+        <div className="PlayerEditorError" role="alert">
+          {playersError}
+        </div>
+      )}
+    </form>
+  </div>
 );
 
 type PayoutsProps = {
@@ -217,8 +308,15 @@ const Payouts = ({ pot }: PayoutsProps) => {
 };
 
 const Hello = () => {
-  const [counts, setCounts] = useState<number[]>(players.map(() => 1));
-  const [playing, setPlaying] = useState<boolean[]>(players.map(() => true));
+  const [players, setPlayers] = useState(initialPlayers);
+  const [counts, setCounts] = useState<number[]>(initialPlayers.map(() => 1));
+  const [playing, setPlaying] = useState<boolean[]>(
+    initialPlayers.map(() => true)
+  );
+  const [playerName, setPlayerName] = useState('');
+  const [playersReady, setPlayersReady] = useState(false);
+  const [savingPlayers, setSavingPlayers] = useState(false);
+  const [playersError, setPlayersError] = useState('');
   const [view, setView] = useState<'buyins' | 'players'>('buyins');
   const [maxBuyins, setMaxBuyins] = useState(BUYIN_LIMITS[0]);
   const [wrapBuyins, setWrapBuyins] = useState(false);
@@ -226,6 +324,32 @@ const Hello = () => {
   const [roundIndex, setRoundIndex] = useState(0);
   const [warningSound, setWarningSound] = useState(defaultSound('oneminute'));
   const [endSound, setEndSound] = useState(defaultSound('bell'));
+
+  useEffect(() => {
+    let active = true;
+    ipcRenderer
+      .invoke('players:load')
+      .then((savedPlayers: string | null) => {
+        if (!active) return null;
+        const loadedPlayers =
+          savedPlayers === null ? initialPlayers : parsePlayers(savedPlayers);
+        setPlayers(loadedPlayers);
+        setCounts(loadedPlayers.map(() => 1));
+        setPlaying(loadedPlayers.map(() => true));
+        setPlayersReady(true);
+        return null;
+      })
+      .catch((error: Error) => {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : String(error);
+        setPlayersError(`Unable to load players: ${message}`);
+        setPlayersReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // The space bar toggles Start/Pause from anywhere. Inputs and the drop-down keep
   // their own space behavior; a focused button must not also be clicked by it.
@@ -319,6 +443,64 @@ const Hello = () => {
   const chooseMaxBuyins = (limit: number) => {
     setMaxBuyins(limit);
     setCounts(counts.map((c) => Math.min(c, limit)));
+  };
+  const savePlayers = async (
+    updatedPlayers: string[],
+    updatedCounts: number[],
+    updatedPlaying: boolean[]
+  ) => {
+    setSavingPlayers(true);
+    setPlayersError('');
+    try {
+      await ipcRenderer.invoke('players:save', updatedPlayers);
+      setPlayers(updatedPlayers);
+      setCounts(updatedCounts);
+      setPlaying(updatedPlaying);
+      setPlayerName('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setPlayersError(`Unable to save players: ${message}`);
+    } finally {
+      setSavingPlayers(false);
+    }
+  };
+  const addPlayer = async () => {
+    const name = playerName.trim();
+    if (!name) {
+      setPlayersError('Enter a player name to add.');
+      return;
+    }
+    if (players.some((player) => player.toLowerCase() === name.toLowerCase())) {
+      setPlayersError(`${name} is already in the player list.`);
+      return;
+    }
+    const updatedPlayers = [...players, name].sort((a, b) =>
+      a.localeCompare(b)
+    );
+    const addedIndex = updatedPlayers.indexOf(name);
+    const updatedCounts = [...counts];
+    updatedCounts.splice(addedIndex, 0, 1);
+    const updatedPlaying = [...playing];
+    updatedPlaying.splice(addedIndex, 0, true);
+    await savePlayers(updatedPlayers, updatedCounts, updatedPlaying);
+  };
+  const deletePlayer = async () => {
+    const name = playerName.trim();
+    if (!name) {
+      setPlayersError('Enter a player name to delete.');
+      return;
+    }
+    const index = players.findIndex(
+      (player) => player.toLowerCase() === name.toLowerCase()
+    );
+    if (index === -1) {
+      setPlayersError(`${name} was not found.`);
+      return;
+    }
+    const updatedPlayers = players.filter((_, i) => i !== index);
+    const updatedCounts = counts.filter((_, i) => i !== index);
+    const updatedPlaying = playing.filter((_, i) => i !== index);
+    await savePlayers(updatedPlayers, updatedCounts, updatedPlaying);
   };
   const pot = countBuyins(counts, playing) * BUYIN_PRICE;
 
@@ -528,11 +710,12 @@ const Hello = () => {
           </div>
         </section>
         <section className="Column BottomColumn">
-          <div className="ColumnContent">
+          <div className="ColumnContent PlayerColumnContent">
             {view === 'buyins' ? (
               <>
                 <h2>Buyins</h2>
                 <Buyins
+                  players={players}
                   counts={counts}
                   playing={playing}
                   maxBuyins={maxBuyins}
@@ -543,7 +726,18 @@ const Hello = () => {
             ) : (
               <>
                 <h2>Player Selection</h2>
-                <PlayerSelection playing={playing} setPlaying={setPlaying} />
+                <PlayerSelection
+                  players={players}
+                  playing={playing}
+                  setPlaying={setPlaying}
+                  playerName={playerName}
+                  setPlayerName={setPlayerName}
+                  playersReady={playersReady}
+                  savingPlayers={savingPlayers}
+                  playersError={playersError}
+                  onAddPlayer={addPlayer}
+                  onDeletePlayer={deletePlayer}
+                />
               </>
             )}
           </div>

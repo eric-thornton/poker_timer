@@ -22,7 +22,7 @@ export default {
         },
       },
       {
-        test: /\.(unl|blinds)$/,
+        test: /\.(unl|blinds|txt)$/,
         type: 'asset/source',
       },
       {
