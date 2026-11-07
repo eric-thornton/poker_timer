@@ -327,7 +327,7 @@ const Hello = () => {
   const [clockRunning, setClockRunning] = useState(false);
   const [roundIndex, setRoundIndex] = useState(0);
   const [warningSound, setWarningSound] = useState(defaultSound('oneminute'));
-  const [endSound, setEndSound] = useState(defaultSound('bell'));
+  const [endSound, setEndSound] = useState(defaultSound('cow'));
 
   const chooseView = (nextView: 'buyins' | 'players') => {
     window.localStorage.setItem('rightView', nextView);

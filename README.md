@@ -2,6 +2,17 @@
 
 A desktop poker timer built with Electron, React, and TypeScript.
 
+## Application screenshot
+
+![Deadmoney Shootout app at startup](images/poker-timer-startup.png)
+
+## AI Assistance Embeded
+
+This repo has markdown files for both CLAUDE Code and Copilot to keep later instances of the AI tool up to date on any new learnings the last instance used in Building, Testing, Running or Deploying this code base.
+
+CLAUDE Code uses CLAUDE.md
+Copilot uses copilot-instructions.md
+
 ## Quick start
 
 This repo needs Node 16 to run correctly. Modern Node versions (including Node 26) can break the webpack/css-loader toolchain and Electron startup flow.
