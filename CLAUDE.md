@@ -34,7 +34,8 @@ No login or auth; the app is a single window.
   the bottom of the column: the Buyins table, and a Player Selection checklist of everyone in
   `players.txt`. Unchecked players are left out of the Buyins table, the totals and the pot
   (so Payouts follows). All players start checked; a player's buyin count is kept while
-  unchecked. State (`counts`, `playing`, `view`) lives in `Hello` in `App.tsx`, in memory only.
+  unchecked. Counts and selection live in `Hello` in memory; the selected view is persisted in
+  local storage so it survives a renderer reload.
 - `images/`: empty, reserved for images.
 - `.unl`, `.txt`, and `.blinds` files are imported as raw text via the `asset/source` rule in
   `.erb/configs/webpack.config.base.js`; types are in `src/resource.d.ts`.

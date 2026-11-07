@@ -350,6 +350,7 @@ a:hover {
 .BuyinLimit {
   text-align: center;
   font-size: max(10px, calc((20vw - 40px) / 14));
+  padding-top: 20px;
 }
 
 .BuyinLimitOptions {
@@ -456,6 +457,14 @@ a:hover {
   width: 8em;
 }
 
+.ClockToggleStart {
+  background-color: #baed91;
+}
+
+.ClockTogglePause {
+  background-color: #fec89a;
+}
+
 .Structure .CurrentRound td {
   font-weight: bold;
   color: black;
@@ -510,4 +519,12 @@ a:hover {
 /* the blinds themselves are two steps (1.2 x 1.2) larger than the label */
 .BlindsValue {
   font-size: 1.44em;
+}
+
+.BlindsCurrentValue {
+  color: #baed91;
+}
+
+.BlindsNextValue {
+  color: #fec89a;
 }

@@ -317,13 +317,22 @@ const Hello = () => {
   const [playersReady, setPlayersReady] = useState(false);
   const [savingPlayers, setSavingPlayers] = useState(false);
   const [playersError, setPlayersError] = useState('');
-  const [view, setView] = useState<'buyins' | 'players'>('buyins');
+  const [view, setView] = useState<'buyins' | 'players'>(() =>
+    window.localStorage.getItem('rightView') === 'players'
+      ? 'players'
+      : 'buyins'
+  );
   const [maxBuyins, setMaxBuyins] = useState(BUYIN_LIMITS[0]);
   const [wrapBuyins, setWrapBuyins] = useState(false);
   const [clockRunning, setClockRunning] = useState(false);
   const [roundIndex, setRoundIndex] = useState(0);
   const [warningSound, setWarningSound] = useState(defaultSound('oneminute'));
   const [endSound, setEndSound] = useState(defaultSound('bell'));
+
+  const chooseView = (nextView: 'buyins' | 'players') => {
+    window.localStorage.setItem('rightView', nextView);
+    setView(nextView);
+  };
 
   useEffect(() => {
     let active = true;
@@ -531,7 +540,7 @@ const Hello = () => {
                 <tr>
                   <th>Round</th>
                   <th>SB</th>
-                  <th>LB</th>
+                  <th>BB</th>
                   {hasAntes && <th>Anty</th>}
                   <th>Duration</th>
                 </tr>
@@ -595,11 +604,11 @@ const Hello = () => {
             {/* labels are right-aligned so the colons line up */}
             <div className="BlindsLine">
               <div className="BlindsLabel">Curr:</div>
-              <div className="BlindsValue">
+              <div className="BlindsValue BlindsCurrentValue">
                 {blinds[roundIndex].sb}/{blinds[roundIndex].lb}
               </div>
               <div className="BlindsLabel">Next:</div>
-              <div className="BlindsValue">
+              <div className="BlindsValue BlindsNextValue">
                 {roundIndex < blinds.length - 1
                   ? `${blinds[roundIndex + 1].sb}/${blinds[roundIndex + 1].lb}`
                   : '-'}
@@ -686,7 +695,9 @@ const Hello = () => {
             </div>
             <div className="ClockButtons">
               <button
-                className="ClockToggle"
+                className={`ClockToggle ${
+                  clockRunning ? 'ClockTogglePause' : 'ClockToggleStart'
+                }`}
                 type="button"
                 onClick={() => setClockRunning(!clockRunning)}
               >
@@ -748,7 +759,7 @@ const Hello = () => {
                 type="radio"
                 name="rightView"
                 checked={view === 'buyins'}
-                onChange={() => setView('buyins')}
+                onChange={() => chooseView('buyins')}
               />
               Buyins
             </label>
@@ -758,7 +769,7 @@ const Hello = () => {
                 type="radio"
                 name="rightView"
                 checked={view === 'players'}
-                onChange={() => setView('players')}
+                onChange={() => chooseView('players')}
               />
               Player Selection
             </label>
