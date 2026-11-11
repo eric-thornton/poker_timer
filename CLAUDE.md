@@ -7,18 +7,44 @@ No login or auth; the app is a single window.
 ## Layout
 
 - `src/App.tsx`, `src/App.global.css`: the whole UI. Title, then three columns
-  20% / 60% / 20%: **Structure** (blinds table), **Clock**, **Payouts** (with a **Buyins**
-  header 1/3 of the way down). The Clock section shows `mm:ss` (16.8vw, four times the title). It starts at the current round's Duration (minutes), counts down once Start Clock is pressed (also bound to the space bar), and pauses on Pause Clock. At 00:00 it rolls into the next round and keeps counting; after the last round it stops at 00:00. "CLOCK PAUSED" (5vw, bold orange) shows under the clock whenever it is not running, including before the first Start (it is hidden with `visibility`, not removed, so the blinds line below does not jump). Under that, two lines `Curr: SB/LB` and `Next: SB/LB` (labels right-aligned so the colons line up; next is `-` on the last level). Labels are 5vw (same as CLOCK PAUSED); the blinds values are two steps larger (1.44em, about 7.2vw). The gap between the Curr and Next rows equals the gap between CLOCK PAUSED and Curr (both 55px at 1512x860, set by `row-gap: 0.33em` on `.BlindsLine`; measured on the ink of the digits). Widest case `Curr: 6000/12000` still fits the 60% column with little to spare, so check it (round 16) if sizes change; 8vw labels would not fit. A level whose Duration is `*` shows `--:--` and does not count. The countdown is timestamp based (`endTimeRef`, 200ms poll), so pausing/resuming and background throttling do not drift. Changing round or structure resets the clock to that round's Duration (changing structure also pauses). A **Sounds** block is pinned to the bottom-left corner of the middle column (`.SoundSettings`, absolutely positioned so it does not add height): drop-downs `Warn:` and `End:`, held in `warningSound` / `endSound` state. Their choices are `None` plus every `resource/*.wav` (shown without the extension, found with `require.context`, embedded in the bundle as data URIs by the `asset/inline` rule in `webpack.config.base.js`, which must force `mimetype: 'audio/wav'`: webpack's default `audio/wave` fails in Electron with "Unable to load URL due to content type" and `play()` rejects silently; types in `src/resource.d.ts`). Defaults: Warn `oneminute`, End `bell` (if present). The Warn sound plays when the running clock counts down through 01:00 (not for a round that starts at 01:00), the End sound at 00:00, including the last round. To test without waiting, override `Date.now` in the page (via the debug port) to jump near 01:00 / 00:00, and wrap `HTMLMediaElement.prototype.play` to log the real outcome (`.then`/`.catch` plus the `ended` and `error` events); do not replace `play()`, or a decode failure goes unnoticed. A sound is fire-and-forget: it plays to its end regardless of the clock moving on. Buttons under it: Round Up / Round Down (move the highlighted current round in the Structure table, clamped to the first and last level; `roundIndex` resets to round 1 when the structure changes).
+  20% / 60% / 20%: **Structure** (blinds table), **Clock/Settings**, **Payouts** (with a **Buyins**
+  header 1/3 of the way down). The middle column switches between Clock and Settings using
+  radios at the bottom of the Structure column. Its "Deadmoney Shootout" header stays visible in
+  both modes, with a same-size "Settings" title below it in Settings mode. The Clock mode shows
+  `mm:ss` (16.8vw, four times the header title), starts at the current round's Duration (minutes),
+  counts down when Start Clock is pressed (also bound to the space bar), and pauses on Pause Clock.
+  At 00:00 it rolls into the next round and keeps counting; after the last round it stops at 00:00.
+  "CLOCK PAUSED" (6vw, bold orange) shows under the clock whenever it is not running, including
+  before the first Start (hidden with `visibility`, not removed, so the blinds line does not jump).
+  Below are `Curr: SB/BB` and `Next: SB/BB`; labels are right-aligned, and Next is `-` on the last
+  level. Center these rows vertically in the remaining space between CLOCK PAUSED and the bottom
+  buttons. The values use 1.44em (about 7.2vw). Widest case `Curr: 6000/12000` just fits the center
+  column. A level with Duration `*` shows `--:--` and does not count. The timestamp-based
+  countdown (`endTimeRef`, 200ms poll) avoids drift when pausing, resuming, or background-throttled.
+  Changing round or structure resets the clock; changing structure also pauses it. Start/Pause and
+  Round Up/Down buttons appear only in Clock mode and are centered in the middle column.
+  Settings contains the "Number of Buyins Allowed" radios and Wrap option, plus Attn/Warn/End sound
+  selectors and play buttons. Attn defaults to `attn`, Warn to `oneminute`, and End to `cow` when
+  those files exist; choices are `None` and every `resource/*.wav` (shown without the extension,
+  found with `require.context`,
+  embedded as data URIs by the `asset/inline` rule in `webpack.config.base.js`, which must force
+  `mimetype: 'audio/wav'`: webpack's default `audio/wave` fails in Electron and `play()` rejects
+  silently; types are in `src/resource.d.ts`). The Warn sound plays when the running clock counts
+  down through 01:00 (not for a round that starts at 01:00); End plays at 00:00, including the last
+  round. For testing, override `Date.now` in the page (via the debug port) and wrap
+  `HTMLMediaElement.prototype.play` to observe the real outcome and `ended`/`error` events; do not
+  replace `play()`. Attn plays every 15 seconds while the clock is paused; sounds play to completion
+  if the clock advances.
 - `resource/*.blinds`: blind structures named `hh:mm.blinds`, pipe delimited, one level per line:
-  `Round|SB|LB|Anty|Duration`. `-` means no ante; `*` in Duration is on the last level
+  `Round|SB|LB|Ante|Duration`. `-` means no ante; `*` in Duration is on the last level
   (meaning not yet confirmed with the user). `App.tsx` loads every `.blinds` file with `require.context`, so a new file in `resource/` shows up in the Structure drop-down (under the Structure heading, sorted by hh:mm, default `2:51`).
 - `resource/players.txt`: one player name per line, alphabetized for display. It drives the
   Buyins table (Name, Count, Value, plus a Total row). Count starts at 1; each row has a single
   + button that adds a buyin
   up to the selected limit. The Wrap checkbox defaults off; when enabled, the next click at the
   limit returns the count to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is chosen by
-  the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) at the bottom of
-  the Structure column; lowering it trims counts that are over it. Counts are held in React
+  the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) on the Settings
+  view; lowering it trims counts that are over it. Counts are held in React
   state only, so they reset when the app restarts. The Buyins header and Total stay outside the
   scrollable player rows; Total follows the rows until the list reaches its available height.
   Player Selection has a scrollable checklist
@@ -41,7 +67,7 @@ No login or auth; the app is a single window.
   `.erb/configs/webpack.config.base.js`; types are in `src/resource.d.ts`.
 - The Structure table font size is computed from `vw`/`vh` in `.Structure` so all 16 rows fit
   the 20% column at any window size. Keep it in sync if the row count or columns change.
-- The user spells the ante column "Anty"; keep that spelling.
+- Label the ante column "Ante".
 
 ## Keeping the screen awake
 

@@ -79,6 +79,53 @@ const playSound = (name: string) => {
 // starting choices, used only if the file is there
 const defaultSound = (name: string) => (sounds[name] ? name : SOUND_OPTIONS[0]);
 
+type SoundControlProps = {
+  id: string;
+  label: string;
+  sound: string;
+  onChange: (sound: string) => void;
+};
+
+const SoundControl = ({ id, label, sound, onChange }: SoundControlProps) => (
+  <label htmlFor={id}>
+    {label}:
+    <select
+      id={id}
+      className="SoundSelect"
+      aria-label={`${label} sound`}
+      value={sound}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {SOUND_OPTIONS.map((name) => (
+        <option key={name} value={name}>
+          {name}
+        </option>
+      ))}
+    </select>
+    <button
+      type="button"
+      className="SoundPlay"
+      aria-label={`Play ${label.toLowerCase()} sound`}
+      title="Play"
+      onClick={() => playSound(sound)}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 9v6h4l5 4V5L7 9H3z" />
+        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+        <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+      </svg>
+    </button>
+  </label>
+);
+
 const BUYIN_PRICE = 10;
 const BUYIN_LIMITS = [2, 3, 4];
 
@@ -322,12 +369,26 @@ const Hello = () => {
       ? 'players'
       : 'buyins'
   );
+  const [centerView, setCenterView] = useState<'clock' | 'settings'>('clock');
   const [maxBuyins, setMaxBuyins] = useState(BUYIN_LIMITS[0]);
   const [wrapBuyins, setWrapBuyins] = useState(false);
   const [clockRunning, setClockRunning] = useState(false);
   const [roundIndex, setRoundIndex] = useState(0);
+  const [attentionSound, setAttentionSound] = useState(defaultSound('attn'));
   const [warningSound, setWarningSound] = useState(defaultSound('oneminute'));
   const [endSound, setEndSound] = useState(defaultSound('cow'));
+
+  useEffect(() => {
+    if (clockRunning || attentionSound === SOUND_OPTIONS[0]) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(
+      () => playSound(attentionSound),
+      15000
+    );
+    return () => window.clearInterval(intervalId);
+  }, [clockRunning, attentionSound]);
 
   const chooseView = (nextView: 'buyins' | 'players') => {
     window.localStorage.setItem('rightView', nextView);
@@ -388,7 +449,7 @@ const Hello = () => {
   const blinds = (structures.find((s) => s.name === structureName) as {
     levels: ReturnType<typeof parseBlinds>;
   }).levels;
-  // '-' means no ante; hide the Anty column when no level pays one
+  // '-' means no ante; hide the Ante column when no level pays one
   const hasAntes = blinds.some((b) => b.ante !== '-');
 
   // Clock: counts down the current round's Duration, then rolls into the next round
@@ -541,7 +602,7 @@ const Hello = () => {
                   <th>Round</th>
                   <th>SB</th>
                   <th>BB</th>
-                  {hasAntes && <th>Anty</th>}
+                  {hasAntes && <th>Ante</th>}
                   <th>Duration</th>
                 </tr>
               </thead>
@@ -563,162 +624,144 @@ const Hello = () => {
             <h2>Payouts</h2>
             <Payouts pot={pot} />
           </div>
-          <div className="BuyinLimit">
-            <div>Number of Buyins Allowed</div>
-            <div className="BuyinLimitOptions">
-              {BUYIN_LIMITS.map((limit) => (
-                <label key={limit} htmlFor={`maxBuyins-${limit}`}>
-                  <input
-                    id={`maxBuyins-${limit}`}
-                    type="radio"
-                    name="maxBuyins"
-                    checked={maxBuyins === limit}
-                    onChange={() => chooseMaxBuyins(limit)}
-                  />
-                  {limit}
-                </label>
-              ))}
-              <label htmlFor="wrapBuyins">
-                <input
-                  id="wrapBuyins"
-                  type="checkbox"
-                  checked={wrapBuyins}
-                  onChange={(e) => setWrapBuyins(e.target.checked)}
-                />
-                Wrap
-              </label>
-            </div>
+          <div className="CenterViewSwitch" role="radiogroup" aria-label="Center view">
+            <label htmlFor="center-view-clock">
+              <input
+                id="center-view-clock"
+                type="radio"
+                name="centerView"
+                checked={centerView === 'clock'}
+                onChange={() => setCenterView('clock')}
+              />
+              Clock
+            </label>
+            <label htmlFor="center-view-settings">
+              <input
+                id="center-view-settings"
+                type="radio"
+                name="centerView"
+                checked={centerView === 'settings'}
+                onChange={() => setCenterView('settings')}
+              />
+              Settings
+            </label>
           </div>
         </section>
         <section className="Column BottomColumn">
-          <div className="ColumnContent">
+          <div
+            className={`ColumnContent ${
+              centerView === 'clock' ? 'ClockColumnContent' : ''
+            }`}
+          >
             <h1 className="Title">Deadmoney Shootout</h1>
-            <div className="ClockDisplay">{formatClock(secondsLeft)}</div>
-            {/* hidden, not removed, while running so the blinds below do not jump */}
-            <div
-              className={clockRunning ? 'ClockPaused Invisible' : 'ClockPaused'}
-              aria-hidden={clockRunning}
-            >
-              CLOCK PAUSED
-            </div>
-            {/* labels are right-aligned so the colons line up */}
-            <div className="BlindsLine">
-              <div className="BlindsLabel">Curr:</div>
-              <div className="BlindsValue BlindsCurrentValue">
-                {blinds[roundIndex].sb}/{blinds[roundIndex].lb}
-              </div>
-              <div className="BlindsLabel">Next:</div>
-              <div className="BlindsValue BlindsNextValue">
-                {roundIndex < blinds.length - 1
-                  ? `${blinds[roundIndex + 1].sb}/${blinds[roundIndex + 1].lb}`
-                  : '-'}
-              </div>
-            </div>
-          </div>
-          <div className="ClockFooter">
-            <div className="SoundSettings">
-              <div className="SoundsHeader">Sounds</div>
-              <label htmlFor="warn-sound">
-                Warn:
-                <select
-                  id="warn-sound"
-                  className="SoundSelect"
-                  aria-label="Warning sound"
-                  value={warningSound}
-                  onChange={(e) => setWarningSound(e.target.value)}
+            {centerView === 'clock' ? (
+              <>
+                <div className="ClockDisplay">{formatClock(secondsLeft)}</div>
+                {/* hidden, not removed, while running so the blinds below do not jump */}
+                <div
+                  className={
+                    clockRunning ? 'ClockPaused Invisible' : 'ClockPaused'
+                  }
+                  aria-hidden={clockRunning}
                 >
-                  {SOUND_OPTIONS.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+                  CLOCK PAUSED
+                </div>
+                {/* labels are right-aligned so the colons line up */}
+                <div className="BlindsLine">
+                  <div className="BlindsLabel">Curr:</div>
+                  <div className="BlindsValue BlindsCurrentValue">
+                    {blinds[roundIndex].sb}/{blinds[roundIndex].lb}
+                  </div>
+                  <div className="BlindsLabel">Next:</div>
+                  <div className="BlindsValue BlindsNextValue">
+                    {roundIndex < blinds.length - 1
+                      ? `${blinds[roundIndex + 1].sb}/${blinds[roundIndex + 1].lb}`
+                      : '-'}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="SettingsDisplay">
+                <h2>Settings</h2>
+                <div className="BuyinLimit">
+                  <div>Number of Buyins Allowed</div>
+                  <div className="BuyinLimitOptions">
+                    {BUYIN_LIMITS.map((limit) => (
+                      <label key={limit} htmlFor={`maxBuyins-${limit}`}>
+                        <input
+                          id={`maxBuyins-${limit}`}
+                          type="radio"
+                          name="maxBuyins"
+                          checked={maxBuyins === limit}
+                          onChange={() => chooseMaxBuyins(limit)}
+                        />
+                        {limit}
+                      </label>
+                    ))}
+                    <label htmlFor="wrapBuyins">
+                      <input
+                        id="wrapBuyins"
+                        type="checkbox"
+                        checked={wrapBuyins}
+                        onChange={(e) => setWrapBuyins(e.target.checked)}
+                      />
+                      Wrap
+                    </label>
+                  </div>
+                </div>
+                <div className="SoundSettings">
+                  <div className="SoundsHeader">Sounds</div>
+                  <SoundControl
+                    id="attn-sound"
+                    label="Attn"
+                    sound={attentionSound}
+                    onChange={setAttentionSound}
+                  />
+                  <SoundControl
+                    id="warn-sound"
+                    label="Warn"
+                    sound={warningSound}
+                    onChange={setWarningSound}
+                  />
+                  <SoundControl
+                    id="end-sound"
+                    label="End"
+                    sound={endSound}
+                    onChange={setEndSound}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          {centerView === 'clock' && (
+            <div className="ClockFooter">
+              <div className="ClockButtons">
+                <button
+                  className={`ClockToggle ${
+                    clockRunning ? 'ClockTogglePause' : 'ClockToggleStart'
+                  }`}
+                  type="button"
+                  onClick={() => setClockRunning(!clockRunning)}
+                >
+                  {clockRunning ? 'Pause Clock' : 'Start Clock'}
+                </button>
                 <button
                   type="button"
-                  className="SoundPlay"
-                  aria-label="Play warning sound"
-                  title="Play"
-                  onClick={() => playSound(warningSound)}
+                  onClick={() =>
+                    setRoundIndex(Math.min(roundIndex + 1, blinds.length - 1))
+                  }
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3 9v6h4l5 4V5L7 9H3z" />
-                    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                    <path d="M18.5 5.5a9 9 0 0 1 0 13" />
-                  </svg>
+                  Round Up
                 </button>
-              </label>
-              <label htmlFor="end-sound">
-                End:
-                <select
-                  id="end-sound"
-                  className="SoundSelect"
-                  aria-label="End sound"
-                  value={endSound}
-                  onChange={(e) => setEndSound(e.target.value)}
-                >
-                  {SOUND_OPTIONS.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
                 <button
                   type="button"
-                  className="SoundPlay"
-                  aria-label="Play end sound"
-                  title="Play"
-                  onClick={() => playSound(endSound)}
+                  onClick={() => setRoundIndex(Math.max(roundIndex - 1, 0))}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3 9v6h4l5 4V5L7 9H3z" />
-                    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                    <path d="M18.5 5.5a9 9 0 0 1 0 13" />
-                  </svg>
+                  Round Down
                 </button>
-              </label>
+              </div>
             </div>
-            <div className="ClockButtons">
-              <button
-                className={`ClockToggle ${
-                  clockRunning ? 'ClockTogglePause' : 'ClockToggleStart'
-                }`}
-                type="button"
-                onClick={() => setClockRunning(!clockRunning)}
-              >
-                {clockRunning ? 'Pause Clock' : 'Start Clock'}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setRoundIndex(Math.min(roundIndex + 1, blinds.length - 1))
-                }
-              >
-                Round Up
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoundIndex(Math.max(roundIndex - 1, 0))}
-              >
-                Round Down
-              </button>
-            </div>
-          </div>
+          )}
         </section>
         <section className="Column BottomColumn">
           <div className="ColumnContent PlayerColumnContent">

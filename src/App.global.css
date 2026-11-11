@@ -229,6 +229,12 @@ a:hover {
   flex: 1;
 }
 
+.ClockColumnContent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .PlayerColumnContent {
   display: flex;
   min-height: 0;
@@ -353,6 +359,30 @@ a:hover {
   padding-top: 20px;
 }
 
+.SettingsDisplay h2 {
+  font-size: 4.2vw;
+  line-height: 1.05;
+  margin: 0 0 16px;
+}
+
+.CenterViewSwitch {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  gap: 1em;
+  padding-top: 20px;
+  font-size: max(10px, calc((20vw - 40px) / 14));
+}
+
+.CenterViewSwitch label {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.CenterViewSwitch input {
+  margin: 0 0.4em 0 0;
+}
+
 .BuyinLimitOptions {
   display: flex;
   flex-wrap: wrap;
@@ -381,21 +411,19 @@ a:hover {
 
 .ClockFooter {
   flex-shrink: 0;
-  display: grid;
-  /* sounds block on the left, buttons centred in the space that remains */
-  grid-template-columns: auto 1fr;
-  align-items: end;
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
   padding-top: 0.5em;
 }
 
-/* bottom-left corner of the column; zero height so it adds no row space (it grows upward) */
 .SoundSettings {
-  height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 0.3em;
-  align-items: flex-start;
+  align-items: center;
+  width: max-content;
+  margin: 2em auto;
   text-align: left;
   font-size: max(10px, 1.1vw);
 }
@@ -407,7 +435,7 @@ a:hover {
 }
 
 .SoundSettings label {
-  /* fixed label width so the Warn and End drop-downs line up */
+  /* fixed label width so the Attn, Warn, and End drop-downs line up */
   display: grid;
   grid-template-columns: 2.8em auto auto;
   align-items: center;
@@ -501,6 +529,9 @@ a:hover {
 
 .BlindsLine {
   display: grid;
+  flex: 1;
+  min-height: 0;
+  align-content: center;
   grid-template-columns: auto auto;
   justify-content: center;
   align-items: baseline;
