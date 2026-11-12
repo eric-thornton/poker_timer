@@ -113,6 +113,7 @@ env -u ELECTRON_RUN_AS_NODE yarn start:main
 - The no-op npm shim is required to prevent the renderer spawn hook from killing the dev server during this repo’s older Electron/webpack startup sequence.
 - The Buyins and Player Selection views share the right column; keep the view-switch radios pinned at the bottom. In Player Selection, let the checklist grow naturally and shrink into a vertical scroller before the editor would overlap the radios. In Buyins, keep the Name/Count/Value header fixed, let only player rows scroll, and place the Total footer directly after the rows so it moves down as the list grows but remains above the radios when rows need to scroll.
 - Player names are loaded from `resource/players.txt` as raw text. In development, the Electron main process handles IPC reads/writes to that file; packaged builds must save edits in `app.getPath('userData')` because packaged resources are read-only.
+- The blind-structure editor treats `resource/*.blinds` as immutable bundled defaults. Custom structures are loaded, saved, and deleted through Electron IPC and persist in `app.getPath('userData')/blind-structures.json`.
 - Keep audio assets such as `resource/*.wav` marked `binary` in `.gitattributes`; the repository-wide LF rule can otherwise alter WAV bytes during file moves.
 - Store app screenshots in `images/` and embed them in Markdown with repository-relative paths.
 - Any time a commit is made, record any new repo-specific learnings or setup discoveries in this file so future Copilot sessions inherit the updated knowledge.

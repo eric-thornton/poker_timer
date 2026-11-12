@@ -40,6 +40,100 @@ const isPlayerNames = (value: unknown): value is string[] =>
     (name: unknown) => typeof name === 'string' && name.trim() !== ''
   );
 
+type BlindLevel = {
+  round: string;
+  sb: string;
+  lb: string;
+  ante: string;
+  duration: string;
+};
+
+type BlindStructure = {
+  name: string;
+  levels: BlindLevel[];
+};
+
+const blindStructuresPath = () =>
+  path.join(app.getPath('userData'), 'blind-structures.json');
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isValidBlindStructure = (value: unknown): value is BlindStructure => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const { name, levels } = value;
+  if (
+    typeof name !== 'string' ||
+    !name.trim() ||
+    name.length > 60 ||
+    Array.from(name).some(
+      (character) =>
+        character === '/' ||
+        character === '\\' ||
+        character.charCodeAt(0) < 32 ||
+        character.charCodeAt(0) === 127
+    ) ||
+    !Array.isArray(levels) ||
+    levels.length === 0 ||
+    levels.length > 100
+  ) {
+    return false;
+  }
+
+  return levels.every((level: unknown, index: number) => {
+    if (!isRecord(level)) return false;
+    const { round, sb, lb, ante, duration } = level;
+    return (
+      typeof round === 'string' &&
+      round === String(index + 1) &&
+      typeof sb === 'string' &&
+      /^\d+$/.test(sb) &&
+      typeof lb === 'string' &&
+      /^\d+$/.test(lb) &&
+      typeof ante === 'string' &&
+      (ante === '-' || /^\d+$/.test(ante)) &&
+      typeof duration === 'string' &&
+      (duration === '*'
+        ? index === levels.length - 1
+        : /^\d+$/.test(duration) && Number(duration) > 0)
+    );
+  });
+};
+
+const readBlindStructures = async (): Promise<BlindStructure[]> => {
+  let contents: string;
+  try {
+    contents = await fs.promises.readFile(blindStructuresPath(), 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const parsedStructures: unknown = JSON.parse(contents);
+  if (!Array.isArray(parsedStructures)) {
+    throw new Error('Saved blind structures have an invalid format.');
+  }
+
+  const savedStructures: BlindStructure[] = [];
+  parsedStructures.forEach((value: unknown) => {
+    if (!isValidBlindStructure(value)) {
+      throw new Error('Saved blind structures have an invalid format.');
+    }
+    if (
+      savedStructures.some(
+        (saved) => saved.name.toLowerCase() === value.name.toLowerCase()
+      )
+    ) {
+      throw new Error('Saved blind structures have duplicate names.');
+    }
+    savedStructures.push(value);
+  });
+  return savedStructures;
+};
+
 ipcMain.handle('players:load', async () => {
   try {
     return await fs.promises.readFile(getPlayersFilePath(), 'utf8');
@@ -61,6 +155,59 @@ ipcMain.handle('players:save', async (_event, playerNames: unknown) => {
     playerNames.map((name) => name.trim()).join('\n'),
     'utf8'
   );
+});
+
+ipcMain.handle('blinds:load', async () => readBlindStructures());
+
+ipcMain.handle('blinds:save', async (_event, structure: unknown) => {
+  if (!isValidBlindStructure(structure)) {
+    throw new Error('Blind structure name or levels are invalid.');
+  }
+
+  const savedStructures = await readBlindStructures();
+  if (
+    [...savedStructures].some(
+      (saved) =>
+        saved.name.toLowerCase() === structure.name.trim().toLowerCase()
+    )
+  ) {
+    throw new Error('A blind structure with that name already exists.');
+  }
+
+  const updatedStructures = [
+    ...savedStructures,
+    { ...structure, name: structure.name.trim() },
+  ];
+  await fs.promises.mkdir(path.dirname(blindStructuresPath()), {
+    recursive: true,
+  });
+  await fs.promises.writeFile(
+    blindStructuresPath(),
+    JSON.stringify(updatedStructures, null, 2),
+    'utf8'
+  );
+  return updatedStructures[updatedStructures.length - 1];
+});
+
+ipcMain.handle('blinds:delete', async (_event, structureName: unknown) => {
+  if (typeof structureName !== 'string' || !structureName.trim()) {
+    throw new Error('A blind structure name is required.');
+  }
+
+  const savedStructures = await readBlindStructures();
+  const updatedStructures = savedStructures.filter(
+    (structure) => structure.name !== structureName
+  );
+  if (updatedStructures.length === savedStructures.length) {
+    throw new Error('The custom blind structure was not found.');
+  }
+
+  await fs.promises.writeFile(
+    blindStructuresPath(),
+    JSON.stringify(updatedStructures, null, 2),
+    'utf8'
+  );
+  return updatedStructures;
 });
 
 if (process.env.NODE_ENV === 'production') {

@@ -23,8 +23,21 @@ No login or auth; the app is a single window.
   countdown (`endTimeRef`, 200ms poll) avoids drift when pausing, resuming, or background-throttled.
   Changing round or structure resets the clock; changing structure also pauses it. Start/Pause and
   Round Up/Down buttons appear only in Clock mode and are centered in the middle column.
-  Settings contains the "Number of Buyins Allowed" radios and Wrap option, plus Attn/Warn/End sound
-  selectors and play buttons. Attn defaults to `attn`, Warn to `oneminute`, and End to `cow` when
+  Settings has two columns below its heading: Edit Page Title and "Number of Buyins Allowed"
+  radios with Wrap on the left; Attn/Warn/End sound selectors and play buttons on the right. The
+  title field updates the main header and persists in local storage; its two-line text area has a
+  helper underneath that explains Enter inserts a displayed line break. The Blind Structures
+  editor spans a single column below those settings columns: users select a bundled or saved
+  structure, copy it, edit its levels, and save it under a unique name. The copy
+  source defaults to `template.blinds`. Users may delete saved custom structures; bundled resource
+  files cannot be deleted in the app. It validates sequential rounds, numeric blind values, ante
+  values, and duration (including `*` only on the last level). Custom structures are stored in
+  `app.getPath('userData')/blind-structures.json`; bundled structures remain unchanged and custom
+  structures appear alongside them in the Structure selector. In Settings, the Blind Structures
+  editor appears below Sounds. The Settings heading stays directly
+  below the app title; the controls below it use
+  the remaining middle-column height and scroll only when the window is too short. The level table
+  has its own bounded scroll area. Attn defaults to `attn`, Warn to `oneminute`, and End to `cow` when
   those files exist; choices are `None` and every `resource/*.wav` (shown without the extension,
   found with `require.context`,
   embedded as data URIs by the `asset/inline` rule in `webpack.config.base.js`, which must force
@@ -35,22 +48,22 @@ No login or auth; the app is a single window.
   `HTMLMediaElement.prototype.play` to observe the real outcome and `ended`/`error` events; do not
   replace `play()`. Attn plays every 15 seconds while the clock is paused; sounds play to completion
   if the clock advances.
-- `resource/*.blinds`: blind structures named `hh:mm.blinds`, pipe delimited, one level per line:
+- `resource/*.blinds`: bundled blind structures named `hh:mm.blinds`, pipe delimited, one level per line:
   `Round|SB|LB|Ante|Duration`. `-` means no ante; `*` in Duration is on the last level
-  (meaning not yet confirmed with the user). `App.tsx` loads every `.blinds` file with `require.context`, so a new file in `resource/` shows up in the Structure drop-down (under the Structure heading, sorted by hh:mm, default `2:51`).
+  (meaning not yet confirmed with the user). `App.tsx` loads every `.blinds` file with `require.context`, so a new file in `resource/` shows up in the Structure drop-down (under the Structure heading, sorted by hh:mm, default `2:51`). User-created structures are saved separately in the Electron user-data folder and merged into that selector.
 - `resource/players.txt`: one player name per line, alphabetized for display. It drives the
   Buyins table (Name, Count, Value, plus a Total row). Count starts at 1; each row has a single
-  + button that adds a buyin
-  up to the selected limit. The Wrap checkbox defaults off; when enabled, the next click at the
-  limit returns the count to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is chosen by
-  the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) on the Settings
-  view; lowering it trims counts that are over it. Counts are held in React
-  state only, so they reset when the app restarts. The Buyins header and Total stay outside the
-  scrollable player rows; Total follows the rows until the list reaches its available height.
-  Player Selection has a scrollable checklist
-  and a name editor that adds or deletes names (case-insensitive exact match); in development,
-  changes overwrite `resource/players.txt`. Packaged builds persist edits in Electron's user-data
-  folder because app resources are read-only.
+  - button that adds a buyin
+    up to the selected limit. The Wrap checkbox defaults off; when enabled, the next click at the
+    limit returns the count to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is chosen by
+    the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) on the Settings
+    view; lowering it trims counts that are over it. Counts are held in React
+    state only, so they reset when the app restarts. The Buyins header and Total stay outside the
+    scrollable player rows; Total follows the rows until the list reaches its available height.
+    Player Selection has a scrollable checklist
+    and a name editor that adds or deletes names (case-insensitive exact match); in development,
+    changes overwrite `resource/players.txt`. Packaged builds persist edits in Electron's user-data
+    folder because app resources are read-only.
 - `resource/payouts.unl`: `pot|1st %|2nd %|3rd %|4th %`, one row per pot size ($50 to $300 in
   \$10 steps); a `-` in the 4th column means only three places are paid. The Payouts table
   looks up the row for the current pot (buyin count x \$10; the closest smaller row if there is

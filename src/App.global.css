@@ -61,6 +61,7 @@ a:hover {
   font-size: 4.2vw;
   margin: 0 0 16px;
   text-align: center;
+  white-space: pre-line;
 }
 
 .Columns {
@@ -90,6 +91,11 @@ a:hover {
   flex-grow: 3;
 }
 
+.Column:first-child .ColumnContent > h2,
+.BuyinsHeading {
+  color: yellow;
+}
+
 .Structure {
   /* scale with the window so all rows and columns fit the 20% column */
   font-size: min(calc((20vw - 40px) / 17.5), calc((100vh - 200px) / 40));
@@ -116,7 +122,7 @@ a:hover {
 }
 
 .BuyinsNameColumn {
-  width: 50%;
+  width: 55%;
 }
 
 .BuyinsHeader,
@@ -233,6 +239,16 @@ a:hover {
   display: flex;
   min-height: 0;
   flex-direction: column;
+}
+
+.SettingsColumnContent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.SettingsColumnContent > .Title {
+  flex-shrink: 0;
 }
 
 .PlayerColumnContent {
@@ -353,16 +369,211 @@ a:hover {
   margin: 0 0.5em 0 0;
 }
 
+.SettingsTopGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1em;
+  align-items: start;
+}
+
+.SettingsLeftColumn,
+.SettingsRightColumn {
+  min-width: 0;
+}
+
+.SettingsRightColumn {
+  display: flex;
+  justify-content: center;
+}
+
 .BuyinLimit {
   text-align: center;
   font-size: max(10px, calc((20vw - 40px) / 14));
   padding-top: 20px;
 }
 
-.SettingsDisplay h2 {
+.SettingsDisplay {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 1.5em;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.SettingsHeader {
+  flex-shrink: 0;
   font-size: 4.2vw;
   line-height: 1.05;
   margin: 0 0 16px;
+  color: orange;
+}
+
+.BlindEditorDivider {
+  width: 100%;
+  margin: 1em 0 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.BlindEditor {
+  margin: 0.7em auto;
+  width: min(94%, 38em);
+  text-align: left;
+  font-size: max(10px, 1vw);
+}
+
+.BlindEditor h3 {
+  margin: 0 0 0.5em;
+  text-align: center;
+  font-size: 1.2em;
+  color: yellow;
+}
+
+.BuyinLimit > div:first-child {
+  color: yellow;
+}
+
+.BlindCopyControl,
+.BlindStructureName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  margin: 0.5em 0;
+}
+
+.BlindCopyControl select,
+.BlindStructureName input,
+.BlindLevels input {
+  min-width: 0;
+  padding: 0.25em;
+  color: white;
+  background: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 0.2em;
+  font: inherit;
+}
+
+.BlindCopyControl select {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.BlindCopyControl label {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: max-content minmax(0, 1fr);
+  min-width: 0;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.BlindEditor button {
+  padding: 0.25em 0.55em;
+  border-radius: 0.25em;
+  font-size: 1em;
+}
+
+.BlindStructureName input {
+  flex: 1;
+}
+
+.BlindLevelsScroll {
+  max-height: min(28vh, 280px);
+  overflow: auto;
+}
+
+.BlindLevels {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.BlindLevels th,
+.BlindLevels td {
+  padding: 0.2em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.BlindLevels thead {
+  position: sticky;
+  top: 0;
+  background: black;
+}
+
+.BlindLevels th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.BlindLevels input {
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+}
+
+.BlindEditorButtons {
+  display: flex;
+  justify-content: center;
+  gap: 0.6em;
+  margin-top: 0.6em;
+}
+
+.BlindDeleteConfirmation {
+  min-height: calc(1.5em + 1px);
+  margin: 0.5em 0;
+  text-align: center;
+}
+
+.BlindDeleteConfirmation > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  color: #ff8a80;
+}
+
+.BlindEditorError {
+  margin: 0.4em 0;
+  color: #ff8a80;
+  text-align: center;
+}
+
+.TitleSetting {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35em;
+  font-size: max(10px, calc((20vw - 40px) / 14));
+}
+
+.TitleSetting label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  color: yellow;
+  text-align: center;
+}
+
+.TitleSetting textarea {
+  box-sizing: border-box;
+  width: 66.6667%;
+  margin: 0 auto;
+  min-width: 0;
+  resize: none;
+  padding: 0.3em 0.5em;
+  color: white;
+  background: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 0.3em;
+  font: inherit;
+}
+
+.TitleSettingHint {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
 }
 
 .CenterViewSwitch {
@@ -400,6 +611,8 @@ a:hover {
 }
 
 .StructureSelect {
+  box-sizing: border-box;
+  width: 50%;
   margin-bottom: 0.8em;
   padding: 0.2em 0.4em;
   font-size: max(10px, calc((20vw - 40px) / 14));
@@ -423,7 +636,7 @@ a:hover {
   gap: 0.3em;
   align-items: center;
   width: max-content;
-  margin: 2em auto;
+  margin: 0.6em auto;
   text-align: left;
   font-size: max(10px, 1.1vw);
 }
@@ -432,6 +645,7 @@ a:hover {
   align-self: stretch;
   text-align: center;
   font-weight: bold;
+  color: yellow;
 }
 
 .SoundSettings label {
@@ -496,7 +710,7 @@ a:hover {
 .Structure .CurrentRound td {
   font-weight: bold;
   color: black;
-  background: yellow;
+  background: #baed91;
 }
 
 .ClockDisplay {
