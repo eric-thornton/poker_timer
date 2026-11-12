@@ -4,6 +4,13 @@ import { ipcRenderer } from 'electron';
 import playersData from '../resource/players.txt';
 import payoutsData from '../resource/payouts.unl';
 import getNextBuyinCount from './buyinCount';
+import {
+  adjustBountyCount,
+  calculateBuyinCost,
+  calculateChipValue,
+  calculateTotalBuyinCost,
+  calculateTotalChipValue,
+} from './buyinCost';
 import './App.global.css';
 
 type BlindLevel = {
@@ -223,7 +230,10 @@ const SoundControl = ({ id, label, sound, onChange }: SoundControlProps) => (
   </label>
 );
 
-const BUYIN_PRICE = 10;
+const DEFAULT_BUYIN_CHIP_VALUE = 1500;
+const DEFAULT_REBUY_CHIP_VALUE = 1000;
+const DEFAULT_BUYIN_COST = 10;
+const DEFAULT_REBUY_COST = 10;
 const BUYIN_LIMITS = [2, 3, 4];
 
 // Each line: pot|1st %|2nd %|3rd %|4th % ('-' when that place is not paid)
@@ -241,6 +251,35 @@ const payoutTable = payoutsData
 const PLACE_NAMES = ['First', 'Second', 'Third', 'Fourth'];
 
 const formatDollars = (amount: number) => `$${amount.toFixed(2)}`;
+const formatCost = (amount: number) => `$${amount.toLocaleString('en-US')}`;
+
+const getStoredInteger = (key: string, defaultValue: number) => {
+  const value = window.localStorage.getItem(key);
+  return value !== null &&
+    /^\d+$/.test(value) &&
+    Number.isSafeInteger(Number(value))
+    ? value
+    : String(defaultValue);
+};
+
+const updateIntegerSetting = (
+  key: string,
+  value: string,
+  setValue: (value: string) => void
+) => {
+  if (
+    !/^\d*$/.test(value) ||
+    (value !== '' && !Number.isSafeInteger(Number(value)))
+  ) {
+    return;
+  }
+  setValue(value);
+  if (value === '') {
+    window.localStorage.removeItem(key);
+  } else {
+    window.localStorage.setItem(key, value);
+  }
+};
 
 // total number of buyins, counting only the players in the current game
 const countBuyins = (counts: number[], playing: boolean[]) =>
@@ -252,7 +291,16 @@ type BuyinsProps = {
   playing: boolean[];
   maxBuyins: number;
   wrapBuyins: boolean;
+  buyInCost: number;
+  rebuyCost: number;
+  buyInChipValue: number;
+  rebuyChipValue: number;
+  showChipValue: boolean;
+  bounties: number[];
+  showBounties: boolean;
+  subtractBounties: boolean;
   setCounts: (counts: number[]) => void;
+  setBounties: (bounties: number[]) => void;
 };
 
 const Buyins = ({
@@ -261,35 +309,86 @@ const Buyins = ({
   playing,
   maxBuyins,
   wrapBuyins,
+  buyInCost,
+  rebuyCost,
+  buyInChipValue,
+  rebuyChipValue,
+  showChipValue,
+  bounties,
+  showBounties,
+  subtractBounties,
   setCounts,
+  setBounties,
 }: BuyinsProps) => {
   const setCount = (index: number, count: number) =>
     setCounts(counts.map((c, i) => (i === index ? count : c)));
+  const adjustBounty = (index: number) =>
+    setBounties(
+      bounties.map((bounty, i) =>
+        i === index ? adjustBountyCount(bounty, subtractBounties) : bounty
+      )
+    );
 
   const totalCount = countBuyins(counts, playing);
+  const totalBounties = bounties.reduce(
+    (total, bounty, index) => (playing[index] ? total + bounty : total),
+    0
+  );
+  const totalCost = calculateTotalBuyinCost(
+    counts,
+    playing,
+    buyInCost,
+    rebuyCost
+  );
+  const totalChipValue = calculateTotalChipValue(
+    counts,
+    playing,
+    buyInChipValue,
+    rebuyChipValue
+  );
+  const tableClassName = [
+    'Buyins',
+    showChipValue && 'BuyinsWithChipValue',
+    showBounties && 'BuyinsWithBounties',
+    showChipValue && showBounties && 'BuyinsWithBothExtras',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="BuyinsTable">
-      <table className="Buyins BuyinsHeader">
+      <table className={`${tableClassName} BuyinsHeader`}>
         <colgroup>
           <col className="BuyinsNameColumn" />
           <col className="BuyinsCountColumn" />
-          <col className="BuyinsValueColumn" />
+          <col className="BuyinsCostColumn" />
+          {showChipValue && <col className="BuyinsChipValueColumn" />}
+          {showBounties && <col className="BuyinsBountiesColumn" />}
         </colgroup>
         <thead>
           <tr>
             <th>Name</th>
             <th>Count</th>
-            <th>Value</th>
+            <th>Cost</th>
+            {showChipValue && (
+              <th>
+                Chip
+                <br />
+                Value
+              </th>
+            )}
+            {showBounties && <th className="BuyinsBountiesHeader">Bounty</th>}
           </tr>
         </thead>
       </table>
       <div className="BuyinsScroll">
-        <table className="Buyins">
+        <table className={tableClassName}>
           <colgroup>
             <col className="BuyinsNameColumn" />
             <col className="BuyinsCountColumn" />
-            <col className="BuyinsValueColumn" />
+            <col className="BuyinsCostColumn" />
+            {showChipValue && <col className="BuyinsChipValueColumn" />}
+            {showBounties && <col className="BuyinsBountiesColumn" />}
           </colgroup>
           <tbody>
             {players.map(
@@ -313,24 +412,56 @@ const Buyins = ({
                         +
                       </button>
                     </td>
-                    <td>${counts[i] * BUYIN_PRICE}</td>
+                    <td>
+                      {formatCost(
+                        calculateBuyinCost(counts[i], buyInCost, rebuyCost)
+                      )}
+                    </td>
+                    {showChipValue && (
+                      <td>
+                        {calculateChipValue(
+                          counts[i],
+                          buyInChipValue,
+                          rebuyChipValue
+                        ).toLocaleString('en-US')}
+                      </td>
+                    )}
+                    {showBounties && (
+                      <td>
+                        {bounties[i]}
+                        <button
+                          type="button"
+                          className="BuyinButton"
+                          aria-label={`${
+                            subtractBounties ? 'Subtract' : 'Add'
+                          } bounty for ${name}`}
+                          onClick={() => adjustBounty(i)}
+                        >
+                          {subtractBounties ? '-' : '+'}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )
             )}
           </tbody>
         </table>
       </div>
-      <table className="Buyins BuyinsFooter">
+      <table className={`${tableClassName} BuyinsFooter`}>
         <colgroup>
           <col className="BuyinsNameColumn" />
           <col className="BuyinsCountColumn" />
-          <col className="BuyinsValueColumn" />
+          <col className="BuyinsCostColumn" />
+          {showChipValue && <col className="BuyinsChipValueColumn" />}
+          {showBounties && <col className="BuyinsBountiesColumn" />}
         </colgroup>
         <tfoot>
           <tr>
             <td>Total</td>
             <td>{totalCount}</td>
-            <td>${totalCount * BUYIN_PRICE}</td>
+            <td>{formatCost(totalCost)}</td>
+            {showChipValue && <td>{totalChipValue.toLocaleString('en-US')}</td>}
+            {showBounties && <td>{totalBounties}</td>}
           </tr>
         </tfoot>
       </table>
@@ -463,6 +594,9 @@ const Hello = () => {
   const [editorError, setEditorError] = useState('');
   const [players, setPlayers] = useState(initialPlayers);
   const [counts, setCounts] = useState<number[]>(initialPlayers.map(() => 1));
+  const [bounties, setBounties] = useState<number[]>(
+    initialPlayers.map(() => 0)
+  );
   const [playing, setPlaying] = useState<boolean[]>(
     initialPlayers.map(() => true)
   );
@@ -479,6 +613,21 @@ const Hello = () => {
   const [appTitle, setAppTitle] = useState(
     () => window.localStorage.getItem('appTitle') ?? 'Deadmoney Shootout'
   );
+  const [buyInChipValue, setBuyInChipValue] = useState(() =>
+    getStoredInteger('buyInCost', DEFAULT_BUYIN_CHIP_VALUE)
+  );
+  const [rebuyChipValue, setRebuyChipValue] = useState(() =>
+    getStoredInteger('rebuyCost', DEFAULT_REBUY_CHIP_VALUE)
+  );
+  const [buyInCost, setBuyInCost] = useState(() =>
+    getStoredInteger('buyInPrice', DEFAULT_BUYIN_COST)
+  );
+  const [rebuyCost, setRebuyCost] = useState(() =>
+    getStoredInteger('rebuyPrice', DEFAULT_REBUY_COST)
+  );
+  const [chipValueInfoSelected, setChipValueInfoSelected] = useState(false);
+  const [bountiesInfoSelected, setBountiesInfoSelected] = useState(false);
+  const [subtractBounties, setSubtractBounties] = useState(false);
   const [maxBuyins, setMaxBuyins] = useState(BUYIN_LIMITS[0]);
   const [wrapBuyins, setWrapBuyins] = useState(false);
   const [clockRunning, setClockRunning] = useState(false);
@@ -519,6 +668,7 @@ const Hello = () => {
           savedPlayers === null ? initialPlayers : parsePlayers(savedPlayers);
         setPlayers(loadedPlayers);
         setCounts(loadedPlayers.map(() => 1));
+        setBounties(loadedPlayers.map(() => 0));
         setPlaying(loadedPlayers.map(() => true));
         setPlayersReady(true);
         return null;
@@ -682,6 +832,7 @@ const Hello = () => {
   const savePlayers = async (
     updatedPlayers: string[],
     updatedCounts: number[],
+    updatedBounties: number[],
     updatedPlaying: boolean[]
   ) => {
     setSavingPlayers(true);
@@ -690,6 +841,7 @@ const Hello = () => {
       await ipcRenderer.invoke('players:save', updatedPlayers);
       setPlayers(updatedPlayers);
       setCounts(updatedCounts);
+      setBounties(updatedBounties);
       setPlaying(updatedPlaying);
       setPlayerName('');
     } catch (error) {
@@ -715,9 +867,16 @@ const Hello = () => {
     const addedIndex = updatedPlayers.indexOf(name);
     const updatedCounts = [...counts];
     updatedCounts.splice(addedIndex, 0, 1);
+    const updatedBounties = [...bounties];
+    updatedBounties.splice(addedIndex, 0, 0);
     const updatedPlaying = [...playing];
     updatedPlaying.splice(addedIndex, 0, true);
-    await savePlayers(updatedPlayers, updatedCounts, updatedPlaying);
+    await savePlayers(
+      updatedPlayers,
+      updatedCounts,
+      updatedBounties,
+      updatedPlaying
+    );
   };
   const deletePlayer = async () => {
     const name = playerName.trim();
@@ -734,8 +893,14 @@ const Hello = () => {
     }
     const updatedPlayers = players.filter((_, i) => i !== index);
     const updatedCounts = counts.filter((_, i) => i !== index);
+    const updatedBounties = bounties.filter((_, i) => i !== index);
     const updatedPlaying = playing.filter((_, i) => i !== index);
-    await savePlayers(updatedPlayers, updatedCounts, updatedPlaying);
+    await savePlayers(
+      updatedPlayers,
+      updatedCounts,
+      updatedBounties,
+      updatedPlaying
+    );
   };
   const loadStructureCopy = () => {
     const source = selectedCopySource;
@@ -849,7 +1014,16 @@ const Hello = () => {
       setSavingBlindStructure(false);
     }
   };
-  const pot = countBuyins(counts, playing) * BUYIN_PRICE;
+  const numericBuyInCost = Number(buyInCost);
+  const numericRebuyCost = Number(rebuyCost);
+  const numericBuyInChipValue = Number(buyInChipValue);
+  const numericRebuyChipValue = Number(rebuyChipValue);
+  const pot = calculateTotalBuyinCost(
+    counts,
+    playing,
+    numericBuyInCost,
+    numericRebuyCost
+  );
 
   return (
     <div className="Layout">
@@ -972,19 +1146,21 @@ const Hello = () => {
                   <div className="SettingsTopGrid">
                     <div className="SettingsLeftColumn">
                       <section className="TitleSetting">
-                        <label htmlFor="app-title">
-                          Edit Page Title
-                          <textarea
-                            id="app-title"
-                            rows={2}
-                            aria-label="Application title"
-                            value={appTitle}
-                            onChange={(e) => chooseAppTitle(e.target.value)}
-                          />
-                        </label>
-                        <div className="TitleSettingHint">
-                          <span>Two lines available.</span>
-                          <span>Use &lt;ENTER&gt; to start second line.</span>
+                        <div className="TitleSettingContent">
+                          <label htmlFor="app-title">
+                            Edit Page Title
+                            <textarea
+                              id="app-title"
+                              rows={2}
+                              aria-label="Application title"
+                              value={appTitle}
+                              onChange={(e) => chooseAppTitle(e.target.value)}
+                            />
+                          </label>
+                          <div className="TitleSettingHint">
+                            <span>Two lines available.</span>
+                            <span>Use &lt;ENTER&gt; to start second line.</span>
+                          </div>
                         </div>
                       </section>
                       <div className="BuyinLimit">
@@ -1013,6 +1189,128 @@ const Hello = () => {
                           </label>
                         </div>
                       </div>
+                    </div>
+                    <div className="SettingsMiddleColumn">
+                      <div className="BuyinValueSettings">
+                        <div className="BuyinValueGrid">
+                          <div />
+                          <div className="BuyinValueColumnHeader">Cost</div>
+                          <div className="BuyinValueColumnHeader">
+                            Chip
+                            <br />
+                            Value
+                          </div>
+                          <div>Buy-In</div>
+                          <input
+                            id="buyin-cost"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={buyInCost}
+                            aria-label="Buy-In cost"
+                            onChange={(e) =>
+                              updateIntegerSetting(
+                                'buyInPrice',
+                                e.target.value,
+                                setBuyInCost
+                              )
+                            }
+                          />
+                          <input
+                            id="buyin-chip-value"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={buyInChipValue}
+                            aria-label="Buy-In chip value"
+                            onChange={(e) =>
+                              updateIntegerSetting(
+                                'buyInCost',
+                                e.target.value,
+                                setBuyInChipValue
+                              )
+                            }
+                          />
+                          <div>Rebuys</div>
+                          <input
+                            id="rebuy-cost"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={rebuyCost}
+                            aria-label="Rebuy cost"
+                            onChange={(e) =>
+                              updateIntegerSetting(
+                                'rebuyPrice',
+                                e.target.value,
+                                setRebuyCost
+                              )
+                            }
+                          />
+                          <input
+                            id="rebuy-chip-value"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={rebuyChipValue}
+                            aria-label="Rebuy chip value"
+                            onChange={(e) =>
+                              updateIntegerSetting(
+                                'rebuyCost',
+                                e.target.value,
+                                setRebuyChipValue
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                      <section
+                        className="BuyinsMoreInfo"
+                        aria-labelledby="buyins-more-info-title"
+                      >
+                        <div
+                          id="buyins-more-info-title"
+                          className="BuyinsMoreInfoHeader"
+                        >
+                          Buy-Ins Display
+                        </div>
+                        <label htmlFor="chip-value-info">
+                          <input
+                            id="chip-value-info"
+                            type="checkbox"
+                            checked={chipValueInfoSelected}
+                            onChange={(e) =>
+                              setChipValueInfoSelected(e.target.checked)
+                            }
+                          />
+                          Chip Value
+                        </label>
+                        <div className="BountiesDisplayControls">
+                          <label htmlFor="bounties-info">
+                            <input
+                              id="bounties-info"
+                              type="checkbox"
+                              checked={bountiesInfoSelected}
+                              onChange={(e) =>
+                                setBountiesInfoSelected(e.target.checked)
+                              }
+                            />
+                            Bounties
+                          </label>
+                          <label htmlFor="subtract-bounties">
+                            <input
+                              id="subtract-bounties"
+                              type="checkbox"
+                              aria-label="Subtract bounties"
+                              checked={subtractBounties}
+                              onChange={(e) =>
+                                setSubtractBounties(e.target.checked)
+                              }
+                            />
+                            -
+                          </label>
+                        </div>
+                      </section>
                     </div>
                     <div className="SettingsRightColumn">
                       <div className="SoundSettings">
@@ -1250,7 +1548,16 @@ const Hello = () => {
                   playing={playing}
                   maxBuyins={maxBuyins}
                   wrapBuyins={wrapBuyins}
+                  buyInCost={numericBuyInCost}
+                  rebuyCost={numericRebuyCost}
+                  buyInChipValue={numericBuyInChipValue}
+                  rebuyChipValue={numericRebuyChipValue}
+                  showChipValue={chipValueInfoSelected}
+                  bounties={bounties}
+                  showBounties={bountiesInfoSelected}
+                  subtractBounties={subtractBounties}
                   setCounts={setCounts}
+                  setBounties={setBounties}
                 />
               </>
             ) : (

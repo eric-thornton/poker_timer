@@ -23,9 +23,13 @@ No login or auth; the app is a single window.
   countdown (`endTimeRef`, 200ms poll) avoids drift when pausing, resuming, or background-throttled.
   Changing round or structure resets the clock; changing structure also pauses it. Start/Pause and
   Round Up/Down buttons appear only in Clock mode and are centered in the middle column.
-  Settings has two columns below its heading: Edit Page Title and "Number of Buyins Allowed"
-  radios with Wrap on the left; Attn/Warn/End sound selectors and play buttons on the right. The
-  title field updates the main header and persists in local storage; its two-line text area has a
+  Settings has three content-sized columns with balanced horizontal spacing below its heading:
+  Edit Page Title and "Number of Buyins Allowed" radios with Wrap on the left; Cost and Chip Value
+  fields followed below by an unchecked-by-default
+  Buy-Ins Display section with selection-only Chip Value and Bounties checkboxes in the middle;
+  Attn/Warn/End
+  sound selectors and play buttons on the right. The title field updates the main header and
+  persists in local storage; its two-line text area is as wide as the longest helper line and has a
   helper underneath that explains Enter inserts a displayed line break. The Blind Structures
   editor spans a single column below those settings columns: users select a bundled or saved
   structure, copy it, edit its levels, and save it under a unique name. The copy
@@ -52,12 +56,21 @@ No login or auth; the app is a single window.
   `Round|SB|LB|Ante|Duration`. `-` means no ante; `*` in Duration is on the last level
   (meaning not yet confirmed with the user). `App.tsx` loads every `.blinds` file with `require.context`, so a new file in `resource/` shows up in the Structure drop-down (under the Structure heading, sorted by hh:mm, default `2:51`). User-created structures are saved separately in the Electron user-data folder and merged into that selector.
 - `resource/players.txt`: one player name per line, alphabetized for display. It drives the
-  Buyins table (Name, Count, Value, plus a Total row). Count starts at 1; each row has a single
+  Buyins table (Name, Count, Cost, plus a Total row). Selecting Chip Value in Buy-Ins Display adds
+  a Chip Value column with a two-line heading and each player's total chip value; the table font
+  scales down and its columns rebalance to accommodate it. Count starts at 1;
+  each row has a single
   - button that adds a buyin
     up to the selected limit. The Wrap checkbox defaults off; when enabled, the next click at the
-    limit returns the count to 1. Value is count x \$10 (`BUYIN_PRICE`). The limit is chosen by
+    limit returns the count to 1. Cost is the Buy-In amount plus the Rebuy amount for each additional
+    entry. Buy-In and Rebuy costs default to \$10 each and persist in local storage; separate Chip
+    Value fields default to 1500 and 1000 for later display. The cost settings drive the Buy-Ins
+    Cost column, total, and payout pot. The limit is chosen by
     the "Number of Buyins Allowed" radios (2, 3 or 4, `BUYIN_LIMITS`, default 2) on the Settings
-    view; lowering it trims counts that are over it. Counts are held in React
+    view; lowering it trims counts that are over it. Selecting Bounties adds a Bounty column
+    with a + button per active player, starting at zero; bounty counts are in-memory and reset when
+    the app restarts. The adjacent minus checkbox switches those controls to subtract, clamped at
+    zero. Counts are held in React
     state only, so they reset when the app restarts. The Buyins header and Total stay outside the
     scrollable player rows; Total follows the rows until the list reaches its available height.
     Player Selection has a scrollable checklist
@@ -66,7 +79,7 @@ No login or auth; the app is a single window.
     folder because app resources are read-only.
 - `resource/payouts.unl`: `pot|1st %|2nd %|3rd %|4th %`, one row per pot size ($50 to $300 in
   \$10 steps); a `-` in the 4th column means only three places are paid. The Payouts table
-  looks up the row for the current pot (buyin count x \$10; the closest smaller row if there is
+  looks up the row for the current pot (sum of player costs; the closest smaller row if there is
   no exact match) and shows Place, %, Payout. The buyin counts live in `Hello` in `App.tsx`
   and are passed to both `Buyins` and `Payouts`.
 - The right column has two views, switched by a Buyins / Player Selection radio pair pinned to

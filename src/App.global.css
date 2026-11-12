@@ -131,8 +131,54 @@ a:hover {
 }
 
 .BuyinsCountColumn,
-.BuyinsValueColumn {
+.BuyinsCostColumn {
   width: 25%;
+}
+
+.BuyinsWithChipValue .BuyinsNameColumn {
+  width: 35%;
+}
+
+.BuyinsWithChipValue {
+  font-size: min(calc((20vw - 40px) / 16), calc((100vh - 200px) / 40));
+}
+
+.BuyinsWithChipValue .BuyinsCountColumn,
+.BuyinsWithChipValue .BuyinsCostColumn {
+  width: 20%;
+}
+
+.BuyinsWithChipValue .BuyinsChipValueColumn {
+  width: 25%;
+}
+
+.BuyinsWithBounties {
+  font-size: min(calc((20vw - 40px) / 16), calc((100vh - 200px) / 40));
+}
+
+.BuyinsWithBounties .BuyinsNameColumn {
+  width: 40%;
+}
+
+.BuyinsWithBounties .BuyinsCountColumn,
+.BuyinsWithBounties .BuyinsCostColumn,
+.BuyinsWithBounties .BuyinsBountiesColumn {
+  width: 20%;
+}
+
+.BuyinsWithBothExtras {
+  font-size: min(calc((20vw - 40px) / 18), calc((100vh - 200px) / 40));
+}
+
+.BuyinsWithBothExtras .BuyinsNameColumn {
+  width: 30%;
+}
+
+.BuyinsWithBothExtras .BuyinsCountColumn,
+.BuyinsWithBothExtras .BuyinsCostColumn,
+.BuyinsWithBothExtras .BuyinsChipValueColumn,
+.BuyinsWithBothExtras .BuyinsBountiesColumn {
+  width: 17.5%;
 }
 
 .BuyinsTable {
@@ -371,19 +417,27 @@ a:hover {
 
 .SettingsTopGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1em;
+  grid-template-columns: max-content max-content max-content;
+  justify-content: space-around;
   align-items: start;
 }
 
 .SettingsLeftColumn,
+.SettingsMiddleColumn,
 .SettingsRightColumn {
   min-width: 0;
 }
 
 .SettingsRightColumn {
   display: flex;
+  align-items: center;
   justify-content: center;
+}
+
+.SettingsMiddleColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .BuyinLimit {
@@ -543,14 +597,22 @@ a:hover {
 .TitleSetting {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 0.35em;
   font-size: max(10px, calc((20vw - 40px) / 14));
+}
+
+.TitleSettingContent {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-width: 100%;
 }
 
 .TitleSetting label {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.35em;
   color: yellow;
   text-align: center;
@@ -558,8 +620,7 @@ a:hover {
 
 .TitleSetting textarea {
   box-sizing: border-box;
-  width: 66.6667%;
-  margin: 0 auto;
+  width: 100%;
   min-width: 0;
   resize: none;
   padding: 0.3em 0.5em;
@@ -573,6 +634,8 @@ a:hover {
 .TitleSettingHint {
   display: flex;
   flex-direction: column;
+  width: max-content;
+  max-width: 100%;
   text-align: center;
 }
 
@@ -639,6 +702,69 @@ a:hover {
   margin: 0.6em auto;
   text-align: left;
   font-size: max(10px, 1.1vw);
+}
+
+.BuyinValueGrid {
+  display: grid;
+  grid-template-columns: max-content calc(4ch + 0.6em) calc(6ch + 0.6em);
+  gap: 0.3em 0.5em;
+  align-items: center;
+  margin: 0.6em auto;
+  font-size: max(10px, 1.1vw);
+}
+
+.BuyinValueColumnHeader {
+  color: yellow;
+  font-weight: bold;
+  text-align: center;
+}
+
+.BuyinValueGrid label {
+  text-align: right;
+}
+
+.BuyinValueGrid input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.1em 0.3em;
+  color: white;
+  background: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 0.3em;
+  font: inherit;
+  text-align: right;
+}
+
+.BuyinsMoreInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  width: max-content;
+  margin: 0.6em auto;
+  font-size: max(10px, 1.1vw);
+}
+
+.BuyinsMoreInfoHeader {
+  color: yellow;
+  font-weight: bold;
+  text-align: center;
+}
+
+.BuyinsMoreInfo label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.BountiesDisplayControls {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+
+.BuyinsMoreInfo input {
+  margin: 0;
 }
 
 .SoundsHeader {
