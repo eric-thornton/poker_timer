@@ -10,8 +10,10 @@ A desktop poker timer built with Electron, React, and TypeScript.
 
 This repo has markdown files for both CLAUDE Code and Copilot to keep later instances of the AI tool up to date on any new learnings the last instance used in Building, Testing, Running or Deploying this code base.
 
-CLAUDE Code uses CLAUDE.md
+CLAUDE Code uses CLAUDE.md <br>
 Copilot uses copilot-instructions.md
+
+Just ask AI assistant to "**run the app**", or "**commit and push**" or "**build a .dmg file for me**".
 
 ## Quick start
 
